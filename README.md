@@ -10,11 +10,11 @@ After that, just run `daps`!
 # Usage
 Here comes the fun part!
 Basic shell commands work, like `cd` or `ls`.
-Built-in commands are `clear`, `clearhist` and `exit`
+Built-in commands are `clear`, `clearhist`, `update` and `exit`
 ### clear
 The `clear` command will clear everything on screen.
 See Configuration below for options.
-### clearhist 
+### clearhist
 Clears history.
 The shell cannot record history if you have rn this command until the shell is restarted.
 This is a feature to prevent bugs, and cannot be turned off.
@@ -56,10 +56,23 @@ Like so:
 }
 }
 ```
+#### PLEASE NOTE! At the moment, built-in shell commands, can not be used in aliases. Built-in commands are listed above.
 ### "cleargreet"
 "cleargreet" specifies if the greeter program should be ran on `clear`.
 Like so:
 {
 "cleargreet": "yes"
 }
-## Have a nice time!
+### What a full config would look like:
+```
+{
+aliases: {
+"ll": "ls -l"
+}
+greeter: "fastfetch"
+"cleargreet": "yes"
+}
+```
+## More things are to come!
+## DAPS is protected by the GNU license, meaning any contributions or deriatives of the program MUST be fully open source.
+### 2026, Stormzady

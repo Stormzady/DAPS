@@ -110,7 +110,6 @@ while True:
                 ccmd = cmdsp[0]
                 ccmar = cmdsp[1:]
                 all_cmds = [ccmd] + ccmar
-                is_interactive = any(cmd in icmds for cmd in all_cmds)
                 if ccmd == "cd":
                         os.chdir(ccmar[0] if ccmar else f"/home/{user}")
                         errcode = "0"
@@ -127,20 +126,22 @@ while True:
                     update()
                 elif ccmd == "exit":
                         sys.exit(255)
-                elif is_interactive:
-                     result = subprocess.run([ccmd] + ccmar, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
-                     errcode = result.returncode
+                elif shutil.which(ccmd):
+                    result = subprocess.run(
+                    [ccmd] + ccmar,
+                    stdin=sys.stdin,
+                    stdout=sys.stdout,
+                    stderr=sys.stderr
+                )
+                    errcode = result.returncode
                 else:
-                    if shutil.which(ccmd):
-                        result = subprocess.run([ccmd] + ccmar, capture_output=True, text=True).stdout
-                        print(f"{COLOR_RE}{result}")
-                    else:
-                        result = subprocess.run(cmd, shell=True)
-                if errcode == "0":
-                        errcode = None
+                    result = subprocess.run(cmd, shell=True)
+                    errcode = result.returncode
         except Exception as e:
                 print(f"An exception has occurred. {e}")
         finally:
+                if errcode == "0":
+                    errcode = False
                 if historycleared:
                         readline.clear_history()
                         pass
