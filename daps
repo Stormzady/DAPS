@@ -5,11 +5,7 @@ import shutil
 import readline
 import subprocess
 import signal
-import caugh
-alias = {
-"ll": "ls -l --color=auto",
-"ls": "ls --color=auto"
-}
+import json
 
 # DO NOT MODIFY ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
 
@@ -20,8 +16,25 @@ COLOR_RE = "\033[0m"
 COLOR_USER = "\033[92m"
 COLOR_HOST = "\033[94m"
 COLOR_CWD = "\033[96m"
-COLOR_ERR = "\033[91m"		
+COLOR_ERR = "\033[91m"
+def loadconf():
+	whereis = os.path.expanduser("~/.config/daps/config.json")
+	if os.path.exists(whereis):
+		with open(f"{whereis}", "r") as f:
+			return json.load(f)
+	else:
+		if os.path.exists(os.path.expanduser("~/.config/daps")):
+			if os.path.exists(os.path.expanduser("~/.config/daps/config.json")):
+				print("Invalid JSON in the config file.")
+				sys.exit(255)
+			else:
+				todoto = os.path.expanduser("~/.config/daps/config.json")
+				subprocess.run(["echo " "{} " ">> " f"{todoto}" ], shell=True)
+		else:
+			os.makedirs(os.path.expanduser("~/.config/daps"))	
 # Shenanigans taht make it go brrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+config = loadconf()
+alias = config["aliases"]
 signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(255))
 readline.parse_and_bind("tab: complete")
 readline.parse_and_bind("set show-all-if-ambiguous-on")
@@ -48,12 +61,14 @@ elif cwd == f"/root":
 		pass
 def clear():
 	os.system("clear")
+def runfc(confsec):
+	torun = config[f"{confsec}"]
+	os.system(torun)
+# out = subprocess.run([f"{torun}"], capture_output=True, text=True)
+# print(out.stdout)
 clear()
-if shutil.which("fastfetch"):
-	os.system("fastfetch")
-	fastfetchif = 1
-else:
-	fastfetchif = 0
+runfc("greeter")
+
 historycleared = 0
 errcode = None
 while True:
@@ -85,10 +100,6 @@ while True:
 			errcode = "0"
 		elif ccmd == "clear":
 			clear()
-			if fastfetchif:
-				os.system("fastfetch")
-			errcode = "0"
-
 		elif ccmd == "clearhist":
 			readline.clear_history()
 			open(historyfile, "w").close()
@@ -102,11 +113,9 @@ while True:
 		else:
 			if shutil.which(ccmd):
 				result = subprocess.run([ccmd] + ccmar, capture_output=True, text=True).stdout
-				print(result)
-				errcode = result.returncode
+				print(f"{COLOR_RE}{result}")
 			else:
 				result = subprocess.run(cmd, shell=True)
-				errcode = result.returncode
 		if errcode == "0":
 			errcode = None
 	except Exception as e:
