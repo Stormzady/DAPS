@@ -49,5 +49,6 @@ Like so:
 "aliases": {
 "ll": "ls -l"
 }
+}
 ```
 ## Have a nice time!
