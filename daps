@@ -31,11 +31,8 @@ def loadconf():
                         os.makedirs(os.path.expanduser("~/.config/daps"))
 # Shenanigans taht make it go brrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
 config = loadconf()
-alias = config["aliases"]
-if config["cleargreet"] == "yes":
-    cleargreet = True
-else:
-    cleargreet = False
+alias = config.get("aliases", {})
+cleargreet = config.get("cleargreet", "no") == "yes"
 signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(255))
 readline.parse_and_bind("tab: complete")
 readline.parse_and_bind("set show-all-if-ambiguous-on")
@@ -70,7 +67,9 @@ def update():
 def clear():
         os.system("clear")
 def runfc(confsec):
-        torun = config[f"{confsec}"]
+        torun = config.get(confsec)
+        if not torun:
+            return
         os.system(torun)
 # out = subprocess.run([f"{torun}"], capture_output=True, text=True)
 # print(out.stdout)
