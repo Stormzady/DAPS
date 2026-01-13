@@ -1,4 +1,4 @@
-DAPS
+# DAPS
 DAPS is a shell written in pure Python. No other language except from JSON for the configuration file is used.
 # Installation
 Go to Releases and get the newest version of DAPS.
