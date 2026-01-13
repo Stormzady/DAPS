@@ -27,8 +27,16 @@ def loadconf():
                         else:
                                 todoto = os.path.expanduser("~/.config/daps/config.json")
                                 subprocess.run(["echo " "{} " ">> " f"{todoto}" ], shell=True)
+                                if os.path.exists(whereis):
+                                    with open("whereis", "r") as f:
+                                        return json.load(f)
                 else:
                         os.makedirs(os.path.expanduser("~/.config/daps"))
+                        todoto = os.path.expanduser("~/.config/daps/config.json")
+                        subprocess.run(["echo " "{} " "> " f"todoto"], shell=True)
+                        if os.path.exists(whereis):
+                            with open(f"whereis", "r") as f:
+                                return json.load(f)
 # Shenanigans taht make it go brrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
 config = loadconf()
 alias = config.get("aliases", {})
@@ -50,11 +58,13 @@ if devmode == True:
                 print("Your hostname DOES NOT match the compiled hostname.")
                 sys.exit(255)
 cwd = os.getcwd()
+iden = "$"
 if cwd == f"/home/{user}":
         cwd = "~"
 elif cwd == f"/root":
         if user == "root":
                 cwd = "~"
+                iden = "#"
         else:
                 pass
 def update():
@@ -84,9 +94,9 @@ while True:
                 if cwd.startswith(home):
                         cwd= cwd.replace(home, "~", 1)
                 if not errcode:
-                        print(f"{COLOR_USER}{user}{COLOR_RE}@{COLOR_HOST}{hostn}{COLOR_RE} - {COLOR_CWD}{cwd}{COLOR_RE}")
+                        print(f"{COLOR_USER}{user}{COLOR_RE}@{COLOR_HOST}{hostn}{COLOR_RE} {COLOR_USER}({iden}){COLOR_RE} - {COLOR_CWD}{cwd}{COLOR_RE}")
                 else:
-                        print(f"{COLOR_ERR}[{errcode}]{COLOR_RE} - {COLOR_USER}{user}{COLOR_RE}@{COLOR_HOST}{hostn}{COLOR_RE} - {COLOR_CWD}{cwd}")
+                        print(f"{COLOR_ERR}[{errcode}]{COLOR_RE} - {COLOR_USER}{user}{COLOR_RE}@{COLOR_HOST}{hostn}{COLOR_RE} {COLOR_USER}({iden}){COLOR_RE} - {COLOR_CWD}{cwd}")
                 try:
                         cmd = input(f"{COLOR_USER}>{COLOR_HOST} ").strip()
                 except EOFError as eof:
@@ -118,14 +128,14 @@ while True:
                 elif ccmd == "exit":
                         sys.exit(255)
                 elif is_interactive:
-                        result = subprocess.run([ccmd] + ccmar, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
-                        errcode = result.returncode
+                     result = subprocess.run([ccmd] + ccmar, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+                     errcode = result.returncode
                 else:
-                        if shutil.which(ccmd):
-                                result = subprocess.run([ccmd] + ccmar, capture_output=True, text=True).stdout
-                                print(f"{COLOR_RE}{result}")
-                        else:
-                                result = subprocess.run(cmd, shell=True)
+                    if shutil.which(ccmd):
+                        result = subprocess.run([ccmd] + ccmar, capture_output=True, text=True).stdout
+                        print(f"{COLOR_RE}{result}")
+                    else:
+                        result = subprocess.run(cmd, shell=True)
                 if errcode == "0":
                         errcode = None
         except Exception as e:
