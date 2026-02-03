@@ -39,7 +39,7 @@ Then, you can add the following options.
 ### "greeter"
 "greeter" is a config option runs it's value at every shell start.
 Like so:
-```
+```json
 {
 "greeter": "fastfetch"
 }
@@ -49,7 +49,7 @@ This will run `fastfetch` at shell start.
 ### "aliases"
 "aliases" is a config list for shell aliases.
 Like so:
-```
+```json
 {
 "aliases": {
 "ll": "ls -l"
@@ -60,19 +60,21 @@ Like so:
 ### "cleargreet"
 "cleargreet" specifies if the greeter program should be ran on `clear`.
 Like so:
+```json
 {
 "cleargreet": "yes"
 }
-### What a full config would look like:
 ```
+### What a full config would look like:
+```json
 {
-aliases: {
+"aliases": {
 "ll": "ls -l"
 }
-greeter: "fastfetch"
+"greeter": "fastfetch"
 "cleargreet": "yes"
 }
 ```
 ## More things are to come!
 ## DAPS is protected by the GNU license, meaning any contributions or deriatives of the program MUST be fully open source.
-### 2026, Stormzady
+### © Nytrix Labs 2026
