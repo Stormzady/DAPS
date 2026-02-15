@@ -1,13 +1,13 @@
 # DAPS
 
-DAPS is a shell written in pure Python. No other language is used, except JSON for the configuration file.
+DAPS is a high-performance shell written in pure Python. It’s designed to be lightweight, customizable, and extensible through Python plugins.
 
 ---
 
 ## Installation
 
 1. Go to **Releases** and get the newest version of DAPS.  
-   - Releases come as `.zip` files. Pre-releases may be `.zip` or single files. Make sure you download the correct version.  
+   - Releases come as `.zip` files. Pre-releases may be `.zip` or single files. 
    - Stable versions (marked as **Release**) are recommended.
 
 2. Once downloaded, extract it to a folder of your choice.
@@ -28,58 +28,36 @@ daps
 
 ## Usage
 
-Basic shell commands work, like `cd` or `ls`.  
+Basic shell commands work, like `cd` or `ls`. DAPS features **Tab-Completion** for commands, aliases, and plugins.
 
-Built-in commands include:
+### Built-in Commands:
 
 - `clear` – Clears everything on screen.  
-- `clearhist` – Clears shell history. After running this, the shell cannot record history until restarted. This prevents bugs.  
+- `clearhist` – Clears shell history. After running this, the shell cannot record history until restarted.
 - `exit` – Exits the shell.  
 - `update` – Updates DAPS by cloning the repository into a temp folder and copying it into `/usr/bin`.
-
----
-
-### `clear`
-
-The `clear` command clears the screen.  
-See **Configuration** below for options.
-
-### `clearhist`
-
-Clears shell history.  
-The shell cannot record history if this command has been run, until the shell is restarted. This is a safety feature.
-
-### `exit`
-
-Exits the shell.
-
-### `update`
-
-Updates DAPS by cloning the repository into a temporary folder and copying the new version into `/usr/bin`.
+- `cd [path]` – Change directory (supports `~` for home).
 
 ---
 
 ## Configuration
 
-The shell creates a file named `config.json` in the `~/.config/daps/` directory (where `~` is your current user's home folder).  
+The shell creates a file named `config.json` in the `~/.config/daps/` directory.
 
-By default, the file contains:
-
-```json
-{}
-```
-
-To start editing, add options inside the braces:
+### `"aliases"` (with Argument Support)
+You can now pass arguments into aliases using `$1`, `$2`, etc., or `$*` for all arguments.
 
 ```json
 {
+  "aliases": {
+    "list": "ls -la $1",
+    "commit": "git commit -m '$*'"
+  }
 }
 ```
-
----
+*Example:* Typing `list /tmp` executes `ls -la /tmp`.
 
 ### `"greeter"`
-
 The `"greeter"` option runs a command every time the shell starts:
 
 ```json
@@ -88,29 +66,8 @@ The `"greeter"` option runs a command every time the shell starts:
 }
 ```
 
-This will run `fastfetch` at shell start.
-
----
-
-### `"aliases"`
-
-The `"aliases"` option lets you create shell aliases:
-
-```json
-{
-  "aliases": {
-    "ll": "ls -l"
-  }
-}
-```
-
-**Note:** Built-in shell commands cannot be used in aliases. Built-in commands are listed above.
-
----
-
 ### `"cleargreet"`
-
-The `"cleargreet"` option specifies whether the greeter should run when using `clear`:
+Specifies whether the greeter should run when using the `clear` command:
 
 ```json
 {
@@ -120,36 +77,35 @@ The `"cleargreet"` option specifies whether the greeter should run when using `c
 
 ---
 
-### `"devicename"`
+## Plugin System
 
-The `"devicename"` option specifies if the **device name** (e.g., `ASUS E410MA`) should be used instead of the hostname (e.g., `fedora`):
+DAPS allows you to write custom shell commands in pure Python.
 
-```json
-{
-  "devicename": true
-}
+### Adding Plugins:
+1. Create a `.py` file in `~/.config/daps/plugins/`.
+2. Define a `run(args)` function that returns an exit code.
+
+**Example Plugin (`hello.py`):**
+```python
+def run(args):
+    name = args[0] if args else "User"
+    print(f"Hello {name} from a DAPS plugin!")
+    return 0
 ```
+*Usage:* Type `hello Stormzady` in DAPS to execute.
 
 ---
 
-### Example of a full config
+## Advanced Features
 
-```json
-{
-  "aliases": {
-    "ll": "ls -l"
-  },
-  "greeter": "fastfetch",
-  "cleargreet": "yes",
-  "devicename": true
-}
-```
+* **Auto-Suggestions:** Hit `Tab` to autocomplete commands based on your path, aliases, and plugins.
+* **Persistent History:** Your command history is saved in `~/.daps.history` and persists across sessions.
+* **Smart Prompt:** The prompt changes color to indicate the last command's exit status. Red `[code]` indicates an error.
 
 ---
 
 ## More Information
 
-- More features are coming soon!  
 - DAPS is protected by the **GNU license**, meaning any contributions or derivatives of the program **must be fully open source**.  
 
 ---
