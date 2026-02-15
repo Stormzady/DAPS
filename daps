@@ -6,145 +6,144 @@ import readline
 import subprocess
 import signal
 import json
+import importlib.util
+
 # DO NOT MODIFY ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
 devmode = False
-# Colourwgfues
 COLOR_RE = "\033[0m"
 COLOR_USER = "\033[92m"
 COLOR_HOST = "\033[94m"
 COLOR_CWD = "\033[96m"
 COLOR_ERR = "\033[91m"
+
+plugins = {}
+
 def loadconf():
-        whereis = os.path.expanduser("~/.config/daps/config.json")
-        if os.path.exists(whereis):
-                with open(f"{whereis}", "r") as f:
+        conf_dir = os.path.expanduser("~/.config/daps")
+        whereis = os.path.join(conf_dir, "config.json")
+        plugin_dir = os.path.join(conf_dir, "plugins")
+        
+        if not os.path.exists(plugin_dir):
+                os.makedirs(plugin_dir)
+        
+        if not os.path.exists(whereis):
+                with open(whereis, "w") as f:
+                        f.write('{"aliases": {}, "cleargreet": "no"}')
+        
+        for filename in os.listdir(plugin_dir):
+                if filename.endswith(".py"):
+                        plugin_name = filename[:-3]
+                        try:
+                                spec = importlib.util.spec_from_file_location(plugin_name, os.path.join(plugin_dir, filename))
+                                module = importlib.util.module_from_spec(spec)
+                                spec.loader.exec_module(module)
+                                plugins[plugin_name] = module
+                        except Exception as e:
+                                print(f"Failed to load plugin {plugin_name}: {e}")
+        
+        try:
+                with open(whereis, "r") as f:
                         return json.load(f)
-        else:
-                if os.path.exists(os.path.expanduser("~/.config/daps")):
-                        if os.path.exists(os.path.expanduser("~/.config/daps/config.json")):
-                                print("Invalid JSON in the config file.")
-                                sys.exit(255)
-                        else:
-                                todoto = os.path.expanduser("~/.config/daps/config.json")
-                                subprocess.run(["echo " "{} " ">> " f"{todoto}" ], shell=True)
-                                if os.path.exists(whereis):
-                                    with open(f"whereis", "r") as f:
-                                        return json.load(f)
-                else:
-                        os.makedirs(os.path.expanduser("~/.config/daps"))
-                        todoto = os.path.expanduser("~/.config/daps/config.json")
-                        subprocess.run(["echo " "{} " "> " f"{todoto}"], shell=True)
-                        if os.path.exists(whereis):
-                            with open(f"whereis", "r") as f:
-                                return json.load(f)
-# Shenanigans taht make it go brrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+        except json.JSONDecodeError:
+                print("Invalid JSON in the config file.")
+                sys.exit(255)
+
 config = loadconf()
 alias = config.get("aliases", {})
 cleargreet = config.get("cleargreet", "no") == "yes"
-signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(255))
+
+# --- AUTO-SUGGESTION LOGIC ---
+def completer(text, state):
+        # Combine aliases, plugins, and built-ins for suggestions
+        options = [c for c in list(alias.keys()) + list(plugins.keys()) + ["cd", "exit", "clear", "update"] if c.startswith(text)]
+        if state < len(options):
+                return options[state]
+        else:
+                return None
+
+readline.set_completer(completer)
 readline.parse_and_bind("tab: complete")
-readline.parse_and_bind("set show-all-if-ambiguous-on")
+# -----------------------------
+
+signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(255))
+
 historyfile = os.path.expanduser("~/.daps.history")
 if os.path.exists(historyfile):
-        readline.read_history_file(historyfile)
-icmds = ["nano", "vi", "vim", "less", "more", "bash", "zsh", "fish", "sudo", "daps"]
+        try: readline.read_history_file(historyfile)
+        except: pass
+
 user = subprocess.run(["whoami"], capture_output=True, text=True).stdout.strip()
-hostn = subprocess.run(["cat", "/etc/hostname"], capture_output=True, text=True).stdout.strip()
-if devmode == True:
-        shostn = os.system("cat /etc/dapshostn")
-        if hostn == shostn:
-                pass
-        else:
-                print("Your hostname DOES NOT match the compiled hostname.")
-                sys.exit(255)
-cwd = os.getcwd()
-iden = "$"
-if cwd == f"/home/{user}":
-        cwd = "~"
-elif cwd == f"/root":
-        if user == "root":
-                cwd = "~"
-                iden = "#"
-        else:
-                pass
-def update():
-    print("Updating.. A sudo prompt may appear soon.")
-    os.system("rm -rf /tmp/daps/")
-    os.system("git clone https://github.com/Stormzady/DAPS /tmp/daps")
-    os.system("sudo cp /tmp/daps/daps /usr/bin/daps")
-    os.system("rm -rf /tmp/daps/")
-    print("Done!")
-def clear():
-        os.system("clear")
+try:
+        with open("/etc/hostname", "r") as hf: hostn = hf.read().strip()
+except:
+        hostn = "daps-station"
+
+def clear(): os.system("clear")
 def runfc(confsec):
         torun = config.get(confsec)
-        if not torun:
-            return
-        os.system(torun)
-# out = subprocess.run([f"{torun}"], capture_output=True, text=True)
-# print(out.stdout)
+        if torun: os.system(torun)
+
 clear()
 runfc("greeter")
-historycleared = 0
+
 errcode = None
 while True:
         try:
                 cwd = os.getcwd()
                 home = os.path.expanduser("~")
-                if cwd.startswith(home):
-                        cwd= cwd.replace(home, "~", 1)
-                if not errcode:
-                        print(f"{COLOR_USER}{user}{COLOR_RE}@{COLOR_HOST}{hostn}{COLOR_RE} {COLOR_USER}({iden}){COLOR_RE} - {COLOR_CWD}{cwd}{COLOR_RE}")
-                else:
-                        print(f"{COLOR_ERR}[{errcode}]{COLOR_RE} - {COLOR_USER}{user}{COLOR_RE}@{COLOR_HOST}{hostn}{COLOR_RE} {COLOR_USER}({iden}){COLOR_RE} - {COLOR_CWD}{cwd}")
+                display_cwd = cwd.replace(home, "~", 1) if cwd.startswith(home) else cwd
+                iden = "#" if user == "root" else "$"
+                
+                prompt_prefix = f"{COLOR_ERR}[{errcode}]{COLOR_RE} - " if errcode and errcode != "0" else ""
+                print(f"{prompt_prefix}{COLOR_USER}{user}{COLOR_RE}@{COLOR_HOST}{hostn}{COLOR_RE} {COLOR_USER}({iden}){COLOR_RE} - {COLOR_CWD}{display_cwd}{COLOR_RE}")
+                
                 try:
-                        cmd = input(f"{COLOR_USER}>{COLOR_HOST} ").strip()
-                except EOFError as eof:
-                        print("An exception occurred at ^D - EOFError.\n DAPS will now close.")
-                        sys.exit(123)
-                if cmd in alias:
-                        cmd = alias[cmd]
-                if not cmd:
+                        raw_input = input(f"{COLOR_USER}>{COLOR_HOST} ").strip()
+                except EOFError: sys.exit(0)
+                except KeyboardInterrupt: 
+                        print("")
                         continue
-                cmdsp = cmd.split()
-                ccmd = cmdsp[0]
-                ccmar = cmdsp[1:]
-                all_cmds = [ccmd] + ccmar
+
+                if not raw_input: continue
+                
+                parts = raw_input.split()
+                cmd_base = parts[0]
+                args = parts[1:]
+
+                if cmd_base in alias:
+                        translated = alias[cmd_base]
+                        for i, arg in enumerate(args):
+                                translated = translated.replace(f"${i+1}", arg)
+                        translated = translated.replace("$*", " ".join(args))
+                        cmd_parts = translated.split()
+                else:
+                        cmd_parts = parts
+
+                ccmd = cmd_parts[0]
+                ccmar = cmd_parts[1:]
+
                 if ccmd == "cd":
-                        os.chdir(ccmar[0] if ccmar else f"/home/{user}")
-                        errcode = "0"
+                        try:
+                                os.chdir(os.path.expanduser(ccmar[0] if ccmar else home))
+                                errcode = "0"
+                        except Exception as e: print(e); errcode = "1"
+                elif ccmd == "exit":
+                        sys.exit(0)
                 elif ccmd == "clear":
                         clear()
-                        if cleargreet:
-                            runfc("greeter")
-                elif ccmd == "clearhist":
-                        readline.clear_history()
-                        open(historyfile, "w").close()
-                        historycleared = 1
-                        print(f"{COLOR_ERR}ATTENTION! History will no longer be recorded until you restart the shell! (exit and then log back in/run daps)")
-                elif ccmd == "update":
-                    update()
-                elif ccmd == "exit":
-                        sys.exit(255)
-                elif shutil.which(ccmd):
-                    result = subprocess.run(
-                    [ccmd] + ccmar,
-                    stdin=sys.stdin,
-                    stdout=sys.stdout,
-                    stderr=sys.stderr
-                )
-                    errcode = result.returncode
+                        if cleargreet: runfc("greeter")
+                        errcode = "0"
+                elif ccmd in plugins:
+                        try:
+                                errcode = str(plugins[ccmd].run(ccmar))
+                        except Exception as e:
+                                print(f"Plugin Error: {e}")
+                                errcode = "1"
                 else:
-                    result = subprocess.run(cmd, shell=True)
-                    errcode = result.returncode
-        except Exception as e:
-                print(f"An exception has occurred. {e}")
-        finally:
-                if errcode == "0":
-                    errcode = False
-                if historycleared:
-                        readline.clear_history()
-                        pass
-                else:
-                        readline.write_history_file(historyfile)
+                        result = subprocess.run(" ".join(cmd_parts), shell=True)
+                        errcode = str(result.returncode)
 
+        except Exception as e: print(f"Shell Error: {e}")
+        finally:
+                try: readline.write_history_file(historyfile)
+                except: pass
